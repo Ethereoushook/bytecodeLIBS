@@ -1,0 +1,87 @@
+local Folder = 'bytecodeLib'
+local Repository = 'https://raw.githubusercontent.com/Ethereoushook/bytecodeLIBS/main/'
+local Files = {
+    'lib.txt',
+    'ThemeManager.txt',
+    'SaveManager.txt',
+}
+
+assert(makefolder and isfolder and isfile and writefile and readfile, 'Executor filesystem functions are required.')
+assert(game.HttpGet, 'game:HttpGet is required.')
+
+local Gui = Instance.new('ScreenGui')
+Gui.ResetOnSpawn = false
+Gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+pcall(function() Gui.Parent = gethui() end)
+if not Gui.Parent then Gui.Parent = game:GetService('CoreGui') end
+
+local Card = Instance.new('Frame')
+Card.AnchorPoint = Vector2.new(.5, .5)
+Card.Position = UDim2.fromScale(.5, .5)
+Card.Size = UDim2.fromOffset(210, 27)
+Card.BackgroundColor3 = Color3.fromRGB(26, 26, 31)
+Card.BorderColor3 = Color3.fromRGB(0, 0, 0)
+Card.ZIndex = 500
+Card.Parent = Gui
+
+local Stroke = Instance.new('UIStroke')
+Stroke.Color = Color3.fromRGB(113, 82, 159)
+Stroke.Thickness = 1
+Stroke.LineJoinMode = Enum.LineJoinMode.Miter
+Stroke.BorderStrokePosition = Enum.BorderStrokePosition.Inner
+Stroke.Parent = Card
+
+local Label = Instance.new('TextLabel')
+Label.BackgroundTransparency = 1
+Label.Position = UDim2.fromOffset(7, 0)
+Label.Size = UDim2.new(1, -14, 1, 0)
+Label.Font = Enum.Font.Code
+Label.TextSize = 14
+Label.TextColor3 = Color3.fromRGB(231, 231, 231)
+Label.TextXAlignment = Enum.TextXAlignment.Left
+Label.ZIndex = 501
+Label.Text = 'Downloading libraries...'
+Label.Parent = Card
+
+local function SetText(Text)
+    Label.Text = Text
+    local Width = game:GetService('TextService'):GetTextSize(Text, 14, Enum.Font.Code, Vector2.new(2000, 100)).X
+    Card.Size = UDim2.fromOffset(math.max(150, Width + 18), 27)
+end
+
+if not isfolder(Folder) then
+    makefolder(Folder)
+end
+
+local Downloaded = {}
+for _, FileName in ipairs(Files) do
+    local Path = Folder .. '/' .. FileName
+    if not isfile(Path) then
+        SetText('Downloading ' .. FileName .. '...')
+        local Success, Content = pcall(function()
+            return game:HttpGet(Repository .. FileName)
+        end)
+        assert(Success and type(Content) == 'string' and #Content > 0, 'Failed to download ' .. FileName)
+        writefile(Path, Content)
+        table.insert(Downloaded, FileName)
+    end
+end
+
+SetText('Successful download libs')
+task.wait(1.2)
+local TweenService = game:GetService('TweenService')
+TweenService:Create(Card, TweenInfo.new(.25), { BackgroundTransparency = 1 }):Play()
+TweenService:Create(Label, TweenInfo.new(.25), { TextTransparency = 1 }):Play()
+TweenService:Create(Stroke, TweenInfo.new(.25), { Transparency = 1 }):Play()
+task.wait(.28)
+Gui:Destroy()
+
+return {
+    Folder = Folder,
+    Downloaded = Downloaded,
+    Paths = {
+        Library = Folder .. '/lib.txt',
+        ThemeManager = Folder .. '/ThemeManager.txt',
+        SaveManager = Folder .. '/SaveManager.txt',
+    },
+}
